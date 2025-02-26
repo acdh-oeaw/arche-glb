@@ -1,0 +1,36 @@
+{
+    "name": "acdh-oeaw/arche-glb",
+    "description": "GLB dissemination service for the ARCHE Suite",
+    "keywords": [],
+    "homepage": "https://github.com/acdh-oeaw/arche-glb",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mateusz Żółtak",
+            "email": "mzoltak@oeaw.ac.at"
+        }
+    ],
+    "require": {
+        "ext-pdo": "*",
+        "ext-pdo_sqlite": "*",
+        "ext-yaml": "*",
+        "guzzlehttp/guzzle": "^7",
+        "acdh-oeaw/arche-lib": "^7",
+        "zozlak/logging": "^1",
+        "acdh-oeaw/arche-diss-cache": "^0.11"
+    },
+    "autoload": {
+        "psr-4": {
+            "acdhOeaw\\": "src/acdhOeaw"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "acdhOeaw\\arche\\thumbnails\\tests\\": "tests"
+        }
+    },
+    "require-dev": {
+        "phpstan/phpstan": "*",
+        "phpunit/phpunit": "^11.4"
+    }
+}

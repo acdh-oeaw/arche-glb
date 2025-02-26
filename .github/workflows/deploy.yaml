@@ -1,0 +1,53 @@
+name: test and deploy
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        type: boolean
+        description: Deploy if not a release
+        default: false
+  push: ~
+  release:
+    types: [published]
+env:
+  RANCHER_PROJECT: Dissemination services
+  RANCHER_NAMESPACE: arche-glb
+jobs:
+  testAndDeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: acdh-oeaw/arche_cicd_start_action@main
+        with:
+          phpVersion: 8.3
+          phpExtensions: json,pcre,yaml,pdo,pdo_sqlite,pdo_pgsql
+          phpstanLevel: 4
+          prepareRepoConfig: true
+      - name: build docker image
+        run: |
+          mkdir build/docroot && cp -R `ls -1 | grep -v ^build` build/docroot/ && cp build/config/arche.yaml build/docroot/config.yaml && mkdir build/docroot/cache && mkdir build/docroot/tmp && cp .htaccess build/docroot/
+          docker build --rm -t "acdhch/$RANCHER_NAMESPACE:latest" --build-arg VARIANT=production --label "buildUrl=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" build
+      #- uses: mxschmitt/action-tmate@v3
+      - name: test image
+        run: |
+          composer require -n zozlak/yaml-merge
+          vendor/bin/yaml-edit.php --src build/config/arche.yaml --src '{"dissCacheService": {"repoDb": []}, "localAccess": null}' config.yaml
+          docker run -d --name "$RANCHER_NAMESPACE" -v `pwd`/config.yaml:/var/www/html/config.yaml -p 8080:80 "acdhch/$RANCHER_NAMESPACE:latest"
+          sleep 1
+
+          # local access
+          #docker rm -fv "$RANCHER_NAMESPACE"
+          #curl https://arche.acdh.oeaw.ac.at/api/41951 > 41951
+          #docker run -d --name "$RANCHER_NAMESPACE" -v `pwd`/tests/config_local.yaml:/var/www/html/config.yaml -v `pwd`/41951:/arche/41951 -p 8080:80 "acdhch/$RANCHER_NAMESPACE:latest"
+          #sleep 1
+          #curl -f -i 'http://127.0.0.1:8080/?id=https://arche.acdh.oeaw.ac.at/api/41951&width=150' > /dev/null
+          #curl -f -i 'http://127.0.0.1:8080/?id=https://arche.acdh.oeaw.ac.at/api/41951&width=150' > /dev/null
+      - uses: acdh-oeaw/arche_cicd_finish_action@main
+        with:
+          pushAndRedeploy: ${{ github.event_name == 'release' && github.event.action == 'published' || inputs.deploy }}
+          dockerhubLogin: ${{ secrets.DOCKER_USERNAME }}
+          dockehubPassword: ${{ secrets.DOCKER_PASSWORD }}
+          imageName: $RANCHER_NAMESPACE
+          rancherProject: $RANCHER_PROJECT
+          rancherNamespace: $RANCHER_NAMESPACE
+          rancherToken: ${{ secrets.RANCHERTOKEN }}
+          coverallsToken: ${{ secrets.coverallsToken }}

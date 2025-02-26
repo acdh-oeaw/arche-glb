@@ -1,0 +1,11 @@
+/nbproject
+/vendor
+/composer.lock
+*.sqlite
+/tmp
+/cache
+/log
+/assets
+/build/docroot
+/build/logs
+/.phpunit.cache

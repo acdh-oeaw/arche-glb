@@ -1,0 +1,47 @@
+dissCacheService:
+  db: sqlite:/var/www/html/db.sqlite
+  log:
+    file: /var/www/html/log
+    level: debug
+  ttl:
+    resource: 3600     # 1 hour
+    response: 31536000 # 1 year
+  repoDb:
+  - archeProd.yaml
+  - archeCur.yaml
+  allowedNmsp:
+  - https://id.acdh.oeaw.ac.at/
+  - https://arche.acdh.oeaw.ac.at/api/
+  - https://arche-curation.acdh-dev.oeaw.ac.at/api/
+  - https://arche-dev.acdh-dev.oeaw.ac.at.at/api/
+  - https://hdl.handle.net/
+  metadataMode: resource
+  parentProperty: https://vocabs.acdh.oeaw.ac.at/schema#isTitleImageOf
+  resourceProperties:
+  - https://vocabs.acdh.oeaw.ac.at/schema#hasIdentifier
+  - https://vocabs.acdh.oeaw.ac.at/schema#hasUpdatedDate
+  - https://vocabs.acdh.oeaw.ac.at/schema#hasFormat
+  - https://vocabs.acdh.oeaw.ac.at/schema#hasRawBinarySize
+  - https://vocabs.acdh.oeaw.ac.at/schema#hasHash
+  - https://vocabs.acdh.oeaw.ac.at/schema#aclRead
+  relativesProperties: []
+maxFileSizeMb: 1000
+minFileSizeMb: 30
+gltfTransformPath: /usr/local/bin/gltf-transform
+gltfpackPath: /usr/local/bin/gltfpack
+allowedAclRead:
+- public
+cache:
+  dir: /var/www/html/cache
+  clearMode: time # 'size' or 'time'
+  maxSizeMb: 2000
+localAccess:
+  https://arche.acdh.oeaw.ac.at/api/:
+    dir: /arche
+    level: 2
+schema:
+  id: https://vocabs.acdh.oeaw.ac.at/schema#hasIdentifier
+  modDate: https://vocabs.acdh.oeaw.ac.at/schema#hasUpdatedDate
+  mime: https://vocabs.acdh.oeaw.ac.at/schema#hasFormat
+  size: https://vocabs.acdh.oeaw.ac.at/schema#hasRawBinarySize
+  aclRead: https://vocabs.acdh.oeaw.ac.at/schema#aclRead
