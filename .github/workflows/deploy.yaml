@@ -33,14 +33,16 @@ jobs:
           vendor/bin/yaml-edit.php --src build/config/arche.yaml --src '{"dissCacheService": {"repoDb": []}, "localAccess": null}' config.yaml
           docker run -d --name "$RANCHER_NAMESPACE" -v `pwd`/config.yaml:/var/www/html/config.yaml -p 8080:80 "acdhch/$RANCHER_NAMESPACE:latest"
           sleep 1
+          curl -f -i 'http://127.0.0.1:8080/?id=https://arche-dev.acdh-dev.oeaw.ac.at/api/262627' > /dev/null
+          curl -f -i 'http://127.0.0.1:8080/?id=https://arche-dev.acdh-dev.oeaw.ac.at/api/262627' > /dev/null
 
           # local access
-          #docker rm -fv "$RANCHER_NAMESPACE"
-          #curl https://arche.acdh.oeaw.ac.at/api/41951 > 41951
-          #docker run -d --name "$RANCHER_NAMESPACE" -v `pwd`/tests/config_local.yaml:/var/www/html/config.yaml -v `pwd`/41951:/arche/41951 -p 8080:80 "acdhch/$RANCHER_NAMESPACE:latest"
-          #sleep 1
-          #curl -f -i 'http://127.0.0.1:8080/?id=https://arche.acdh.oeaw.ac.at/api/41951&width=150' > /dev/null
-          #curl -f -i 'http://127.0.0.1:8080/?id=https://arche.acdh.oeaw.ac.at/api/41951&width=150' > /dev/null
+          docker rm -fv "$RANCHER_NAMESPACE"
+          curl  https://arche-dev.acdh-dev.oeaw.ac.at/api/262627 > 262627
+          docker run -d --name "$RANCHER_NAMESPACE" -v `pwd`/tests/config_local.yaml:/var/www/html/config.yaml -v `pwd`/262627:/arche/262627 -p 8080:80 "acdhch/$RANCHER_NAMESPACE:latest"
+          sleep 1
+          curl -f -i 'http://127.0.0.1:8080/?id=https://arche-dev.acdh-dev.oeaw.ac.at/api/262627' > /dev/null
+          curl -f -i 'http://127.0.0.1:8080/?id=https://arche-dev.acdh-dev.oeaw.ac.at/api/262627' > /dev/null
       - uses: acdh-oeaw/arche_cicd_finish_action@main
         with:
           pushAndRedeploy: ${{ github.event_name == 'release' && github.event.action == 'published' || inputs.deploy }}

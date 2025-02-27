@@ -55,32 +55,36 @@ class Resource {
     static public function cacheHandler(RepoResourceInterface $res,
                                         array $param, object $config,
                                         ?LoggerInterface $log = null): ResponseCacheItem {
-        $resource = new self((string) $res->getUri(), $config, $log);
-        return $resource->getResponse($res->getGraph());
+        $res = new self($res->getGraph(), $config, $log);
+        return $res->getResponse();
     }
 
-    private string $resUrl;
+    private string $url;
+    private DatasetNodeInterface $meta;
     private object $config;
     private LoggerInterface | null $log;
 
-    public function __construct(string $resUrl, object $config,
+    public function __construct(DatasetNodeInterface $meta, object $config,
                                 ?LoggerInterface $log) {
-        $this->resUrl = $resUrl;
+        $this->url    = (string) $meta->getNode();
+        $this->meta   = $meta;
         $this->config = $config;
         $this->log    = $log;
     }
 
-    public function getResponse(DatasetNodeInterface $meta): ResponseCacheItem {
-        $response = $this->checkMeta($meta);
-        if ($response === null) {
+    public function getResponse(): ResponseCacheItem {
+        $response = $this->checkMetadata();
+        if ($response !== null) {
             return $response;
         }
 
         $path    = $this->getThumbnailPath();
-        $modDate = new DateTimeImmutable($meta->getObjectValue(new PT($this->config->schema->modDate)));
+        $hit     = false;
+        $modDate = new DateTimeImmutable($this->meta->getObjectValue(new PT($this->config->schema->modDate)));
         if (!file_exists($path) || filemtime($path) < $modDate->getTimestamp()) {
             $this->generateThumbnail();
         } else {
+            $hit = true;
             $this->log?->info("Serving thumbnail model from cache $path");
         }
 
@@ -88,42 +92,21 @@ class Resource {
             'Content-Type' => self::MIME,
             'Content-Size' => (string) filesize($path),
         ];
-        return new ResponseCacheItem($path, 200, $headers, false, true);
-    }
-
-    private function checkMeta(DatasetNodeInterface $meta): ResponseCacheItem | null {
-        $schema = $this->config->schema;
-
-        $aclRead      = $meta->listObjects(new PT($schema->aclRead))->getValues();
-        $allowedRoles = array_intersect($aclRead, $this->config->allowedAclRead);
-        if (count($allowedRoles) === 0) {
-            return new ResponseCacheItem('Unauthorized', 401);
-        }
-
-        $mime = $meta->getObjectValue(new PT($schema->mime));
-        if ($mime !== self::MIME) {
-            return new ResponseCacheItem("Unsupported resource format ($mime). Only " . self::MIME . " is supported.", 400);
-        }
-
-        $sizeLimitMb = $this->config->maxFileSizeMb ?? self::DEFAULT_MAX_FILE_SIZE_MB;
-        $sizeMb      = ((int) $meta->getObjectValue(new PT($schema->size))) >> 20;
-        if ($sizeMb > $sizeLimitMb) {
-            return new ResponseCacheItem("Resource size ($sizeMb MB) exceeds the limit ($sizeLimitMb MB", 400);
-        }
+        return new ResponseCacheItem($path, 200, $headers, $hit, true);
     }
 
     private function generateThumbnail(): void {
-        $path      = $this->getThumbnailPath();
+        $path = $this->getThumbnailPath();
+
         $pathTmp   = $path . rand(0, 100000) . '.glb';
         $fileCache = new FileCache($this->config->cache->dir, $this->log, (array) $this->config->localAccess);
-        //$refPath   = $fileCache->getRefFilePath($this->resUrl, self::MIME);
-        $refPath   = '/var/www/html/model.glb';
+        $refPath   = $fileCache->getRefFilePath($this->url, self::MIME);
 
         // model small enough to be server as it is
         $sizeMb    = ((int) filesize($refPath)) >> 20;
         $minSizeMb = $this->config->minFileSizeMb ?? self::DEFAULT_MIN_FILE_SIZE_MB;
         if ($sizeMb <= $minSizeMb) {
-            copy($path, $pathTmp);
+            copy($refPath, $pathTmp);
             if (!file_exists($path)) {
                 rename($pathTmp, $path);
             } else {
@@ -183,7 +166,7 @@ class Resource {
 
     /**
      * 
-     * @return array<string, int>
+     * @return array{0:int, 1: int}
      */
     private function getStatistics(string $path): array {
         $cmd    = ['gltf-transform', 'inspect', '--format', 'csv', $path];
@@ -203,7 +186,7 @@ class Resource {
                 } elseif (in_array('mimeType', $csvHeader)) {
                     $table = 'textures';
                 }
-            } elseif (!empty($table)) {
+            } elseif (!empty($table) && isset($csvHeader)) {
                 $stats[$table][] = (object) array_combine($csvHeader, str_getcsv($line, ','));
             }
         }
@@ -221,6 +204,7 @@ class Resource {
         $cmd[0] = match ($cmd[0] ?? '') {
             'gltf-transform' => $this->config->gltfTransformPath,
             'gltfpack' => $this->config->gltfpackPath,
+            default => throw new RuntimeException('Unknown gltf command ' . $cmd[0]),
         };
         $cmd    = implode(' ', array_map(fn($x) => escapeshellarg($x), $cmd));
         $output = $ret    = null;
@@ -233,10 +217,33 @@ class Resource {
         return $output;
     }
 
+    private function checkMetadata(): ResponseCacheItem | null {
+        $schema = $this->config->schema;
+
+        $aclRead      = $this->meta->listObjects(new PT($schema->aclRead))->getValues();
+        $allowedRoles = array_intersect($aclRead, $this->config->allowedAclRead);
+        if (count($allowedRoles) === 0) {
+            return new ResponseCacheItem('Unauthorized', 401);
+        }
+
+        $mime = $this->meta->getObjectValue(new PT($schema->mime));
+        if ($mime !== self::MIME) {
+            return new ResponseCacheItem("Unsupported resource format ($mime). Only " . self::MIME . " is supported.", 400);
+        }
+
+        $sizeLimitMb = $this->config->maxFileSizeMb ?? self::DEFAULT_MAX_FILE_SIZE_MB;
+        $sizeMb      = ((int) $this->meta->getObjectValue(new PT($schema->size))) >> 20;
+        if ($sizeMb > $sizeLimitMb) {
+            return new ResponseCacheItem("Resource size ($sizeMb MB) exceeds the limit ($sizeLimitMb MB)", 400);
+        }
+
+        return null;
+    }
+
     /**
      * Returns expected cached file location (doesn't assure such a file exists).
      */
     private function getThumbnailPath(): string {
-        return sprintf('%s/%s/thumb.glb', $this->config->cache->dir, hash('xxh128', $this->resUrl));
+        return sprintf('%s/%s/thumb.glb', $this->config->cache->dir, hash('xxh128', $this->url));
     }
 }

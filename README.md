@@ -1,4 +1,4 @@
-# Repo-glb
+# ARCHE-glb
 
 [![Build status](https://github.com/acdh-oeaw/arche-glb/actions/workflows/deploy.yaml/badge.svg)](https://github.com/acdh-oeaw/arche-glb/actions/workflows/deploy.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/acdh-oeaw/arche-glb/badge.svg?branch=master)](https://coveralls.io/github/acdh-oeaw/arche-glb?branch=master)

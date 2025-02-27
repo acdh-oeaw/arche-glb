@@ -17,7 +17,7 @@
         "guzzlehttp/guzzle": "^7",
         "acdh-oeaw/arche-lib": "^7",
         "zozlak/logging": "^1",
-        "acdh-oeaw/arche-diss-cache": "^0.11"
+        "acdh-oeaw/arche-diss-cache": "^0.11.2"
     },
     "autoload": {
         "psr-4": {
