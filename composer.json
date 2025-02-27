@@ -11,13 +11,10 @@
         }
     ],
     "require": {
-        "ext-pdo": "*",
         "ext-pdo_sqlite": "*",
         "ext-yaml": "*",
-        "guzzlehttp/guzzle": "^7",
-        "acdh-oeaw/arche-lib": "^7",
         "zozlak/logging": "^1",
-        "acdh-oeaw/arche-diss-cache": "^0.11.2"
+        "acdh-oeaw/arche-diss-cache": "^0.11"
     },
     "autoload": {
         "psr-4": {
@@ -31,6 +28,7 @@
     },
     "require-dev": {
         "phpstan/phpstan": "*",
-        "phpunit/phpunit": "^11.4"
+        "phpunit/phpunit": "^11.4",
+        "zozlak/yaml-merge": "^1.0"
     }
 }

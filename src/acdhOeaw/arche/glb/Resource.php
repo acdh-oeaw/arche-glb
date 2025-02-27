@@ -75,6 +75,7 @@ class Resource {
     public function getResponse(): ResponseCacheItem {
         $response = $this->checkMetadata();
         if ($response !== null) {
+            $this->log?->error($response->body);
             return $response;
         }
 

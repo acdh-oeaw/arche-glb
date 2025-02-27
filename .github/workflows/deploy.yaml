@@ -29,7 +29,8 @@ jobs:
       #- uses: mxschmitt/action-tmate@v3
       - name: test image
         run: |
-          composer require -n zozlak/yaml-merge
+          composer update
+
           vendor/bin/yaml-edit.php --src build/config/arche.yaml --src '{"dissCacheService": {"repoDb": []}, "localAccess": null}' config.yaml
           docker run -d --name "$RANCHER_NAMESPACE" -v `pwd`/config.yaml:/var/www/html/config.yaml -p 8080:80 "acdhch/$RANCHER_NAMESPACE:latest"
           sleep 1

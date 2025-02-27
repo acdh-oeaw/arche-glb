@@ -6,14 +6,12 @@ dissCacheService:
   ttl:
     resource: 3600     # 1 hour
     response: 31536000 # 1 year
-  repoDb:
-  - archeProd.yaml
-  - archeCur.yaml
+  repoDb: []
   allowedNmsp:
   - https://id.acdh.oeaw.ac.at/
   - https://arche.acdh.oeaw.ac.at/api/
   - https://arche-curation.acdh-dev.oeaw.ac.at/api/
-  - https://arche-dev.acdh-dev.oeaw.ac.at.at/api/
+  - https://arche-dev.acdh-dev.oeaw.ac.at/api/
   - https://hdl.handle.net/
   metadataMode: resource
   parentProperty: https://vocabs.acdh.oeaw.ac.at/schema#isTitleImageOf
@@ -21,6 +19,7 @@ dissCacheService:
   - https://vocabs.acdh.oeaw.ac.at/schema#hasIdentifier
   - https://vocabs.acdh.oeaw.ac.at/schema#hasUpdatedDate
   - https://vocabs.acdh.oeaw.ac.at/schema#hasRawBinarySize
+  - https://vocabs.acdh.oeaw.ac.at/schema#hasFormat
   - https://vocabs.acdh.oeaw.ac.at/schema#aclRead
   relativesProperties: []
 maxFileSizeMb: 1000
