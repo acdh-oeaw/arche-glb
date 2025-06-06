@@ -14,7 +14,7 @@
         "ext-pdo_sqlite": "*",
         "ext-yaml": "*",
         "zozlak/logging": "^1",
-        "acdh-oeaw/arche-diss-cache": "^0.11"
+        "acdh-oeaw/arche-diss-cache": "^1"
     },
     "autoload": {
         "psr-4": {
