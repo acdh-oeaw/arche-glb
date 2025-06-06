@@ -2,6 +2,10 @@ name: test and deploy
 on:
   workflow_dispatch:
     inputs:
+      debug:
+        type: boolean
+        description: Run tmate concole before integration tests
+        default: false
       deploy:
         type: boolean
         description: Deploy if not a release
@@ -26,7 +30,8 @@ jobs:
         run: |
           mkdir build/docroot && cp -R `ls -1 | grep -v ^build` build/docroot/ && cp build/config/arche.yaml build/docroot/config.yaml && mkdir build/docroot/cache && mkdir build/docroot/tmp && cp .htaccess build/docroot/
           docker build --rm -t "acdhch/$RANCHER_NAMESPACE:latest" --build-arg VARIANT=production --label "buildUrl=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" build
-      #- uses: mxschmitt/action-tmate@v3
+      - if: ${{ inputs.debug }}
+        uses: mxschmitt/action-tmate@v3
       - name: test image
         run: |
           composer update
@@ -50,7 +55,4 @@ jobs:
           dockerhubLogin: ${{ secrets.DOCKER_USERNAME }}
           dockehubPassword: ${{ secrets.DOCKER_PASSWORD }}
           imageName: $RANCHER_NAMESPACE
-          rancherProject: $RANCHER_PROJECT
-          rancherNamespace: $RANCHER_NAMESPACE
-          rancherToken: ${{ secrets.RANCHERTOKEN }}
           coverallsToken: ${{ secrets.coverallsToken }}
