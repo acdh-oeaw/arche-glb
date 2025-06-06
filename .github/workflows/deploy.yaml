@@ -8,7 +8,7 @@ on:
         default: false
       deploy:
         type: boolean
-        description: Deploy if not a release
+        description: Push image if not a release
         default: false
   push: ~
   release:
