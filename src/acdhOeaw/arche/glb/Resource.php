@@ -103,6 +103,11 @@ class Resource {
         $fileCache = new FileCache($this->config->cache->dir, $this->log, (array) $this->config->localAccess);
         $refPath   = $fileCache->getRefFilePath($this->url, self::MIME);
 
+        $dir = dirname($path);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0700, true);
+        }
+
         // model small enough to be server as it is
         $sizeMb    = ((int) filesize($refPath)) >> 20;
         $minSizeMb = $this->config->minFileSizeMb ?? self::DEFAULT_MIN_FILE_SIZE_MB;
@@ -115,11 +120,6 @@ class Resource {
             }
             $this->log?->debug("Small model ($sizeMb MB) - serving as it is");
             return;
-        }
-
-        $dir = dirname($path);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0700, true);
         }
 
         // gltfpack requires input file to have a proper extension
