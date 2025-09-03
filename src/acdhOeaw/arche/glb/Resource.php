@@ -122,6 +122,10 @@ class Resource {
             mkdir($dir, 0700, true);
         }
 
+        // gltfpack requires input file to have a proper extension
+        $pathTmpIn = $path . rand(0, 100000) . '.glb';
+        symlink($refPath, $pathTmpIn);
+
         // The problem is we have no idea how much optimization can be achieved
         // by just symplyfying messy meshes and compressing textures better.
         // Therefore if source file is bigger the our arbitrarily taken size,
@@ -130,11 +134,12 @@ class Resource {
         // based on the ration between the initialy optimized model metrics
         // and desired metrics.
         $cmd = [
-            'gltfpack', '-i', $refPath, '-o', $pathTmp, '-cc',
+            'gltfpack', '-i', $pathTmpIn, '-o', $pathTmp, '-cc',
             '-tp', '-tc',
             '-sa', '-si', '0.99'
         ];
         $this->runGltf($cmd, 'Model simplification failed');
+        unlink($pathTmpIn);
 
         $sizeMb = ((int) filesize($pathTmp)) >> 20;
         if ($sizeMb > $minSizeMb) {
@@ -153,7 +158,7 @@ class Resource {
 
     private function simplify(string $inPath, string $outPath): void {
         list($vertexSizeMb, $textureSizeMb) = $this->getStatistics($inPath);
-        $targetSizeMb = (int) ( $this->config->minFileSizeMb ?? self::DEFAULT_MIN_FILE_SIZE_MB);
+        $targetSizeMb = (int) ($this->config->minFileSizeMb ?? self::DEFAULT_MIN_FILE_SIZE_MB);
         $ratio        = $targetSizeMb / ($vertexSizeMb + $textureSizeMb);
         $this->log?->debug("Vertex size $vertexSizeMb MB, textures size $textureSizeMb MB, target size $targetSizeMb MB, ratio " . round($ratio, 3));
 
