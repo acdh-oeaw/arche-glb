@@ -42,6 +42,6 @@ $log    = $service->getLog();
 $clbck  = fn($res, $param) => Resource::cacheHandler($res, $param, $config, $log);
 $service->setCallback($clbck);
 
-$response = $service->serveRequest($_GET['id'] ?? '', [], $_GET['force'] ?? false);
+$response = $service->serveRequest($_GET['id'] ?? '', []);
 $response->send();
 $log->info("Response served in " . round(microtime(true) - $t0, 3) . " s");
