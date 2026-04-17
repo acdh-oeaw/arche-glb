@@ -40,6 +40,8 @@ use acdhOeaw\arche\lib\dissCache\ResponseCacheItem;
  */
 class ResourceTest extends \PHPUnit\Framework\TestCase {
 
+    const RES_URL = 'https://arche.acdh.oeaw.ac.at/api/349786';
+    
     static private object $config;
     static private object $schema;
 
@@ -75,7 +77,7 @@ class ResourceTest extends \PHPUnit\Framework\TestCase {
 
     public function testCacheHandler(): void {
         $modDate = '2024-10-16 09:46:30';
-        $resUri  = DF::namedNode('https://arche-dev.acdh-dev.oeaw.ac.at/api/262627');
+        $resUri  = DF::namedNode(self::RES_URL);
         $graph   = new DatasetNode($resUri);
         $graph->add(DF::quad($resUri, self::$schema->modDate, DF::literal($modDate)));
         $res     = $this->createStub(RepoResourceInterface::class);
@@ -107,15 +109,14 @@ class ResourceTest extends \PHPUnit\Framework\TestCase {
     }
 
     public function testGetResponse(): void {
-        $resUrl  = 'https://arche-dev.acdh-dev.oeaw.ac.at/api/262627';
-        $resMeta = $this->getResourceMeta($resUrl, '2025-01-01');
+        $resMeta = $this->getResourceMeta(self::RES_URL, '2025-01-01');
         $res     = new Resource($resMeta, self::$config, null);
 
         $resp = $res->getResponse();
-        $this->assertEquals($this->getRefResponse($resUrl), $resp);
+        $this->assertEquals($this->getRefResponse(self::RES_URL), $resp);
 
         $resp = $res->getResponse();
-        $this->assertEquals($this->getRefResponse($resUrl, true), $resp);
+        $this->assertEquals($this->getRefResponse(self::RES_URL, true), $resp);
     }
 
     private function getRefResponse(string $url, bool $hit = false): ResponseCacheItem {
