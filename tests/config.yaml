@@ -3,6 +3,7 @@ dissCacheService:
   log:
     file: /var/www/html/log
     level: debug
+  maxCount: 10000
   ttl:
     resource: 3600     # 1 hour
     response: 31536000 # 1 year
