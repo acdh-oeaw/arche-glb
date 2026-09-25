@@ -1,4 +1,4 @@
-FROM php:8.3-apache
+FROM php:8.5-apache
 # VARIANT must be "production" or "development"
 ARG VARIANT
 RUN cp "$PHP_INI_DIR/php.ini-$VARIANT" "$PHP_INI_DIR/php.ini"

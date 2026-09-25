@@ -29,6 +29,8 @@ namespace acdhOeaw\arche\thumbnails\tests;
 use DateTimeImmutable;
 use quickRdf\DataFactory as DF;
 use quickRdf\DatasetNode;
+use acdhOeaw\arche\lib\dissCache\CallbackContextStub;
+use acdhOeaw\arche\lib\dissCache\FileCache;
 use acdhOeaw\arche\lib\RepoResourceInterface;
 use acdhOeaw\arche\glb\Resource;
 use acdhOeaw\arche\lib\dissCache\ResponseCacheItem;
@@ -41,9 +43,10 @@ use acdhOeaw\arche\lib\dissCache\ResponseCacheItem;
 class ResourceTest extends \PHPUnit\Framework\TestCase {
 
     const RES_URL = 'https://arche.acdh.oeaw.ac.at/api/349786';
-    
+
     static private object $config;
     static private object $schema;
+    static private CallbackContextStub $context;
 
     static public function setUpBeforeClass(): void {
         parent::setUpBeforeClass();
@@ -53,23 +56,25 @@ class ResourceTest extends \PHPUnit\Framework\TestCase {
         foreach (self::$config->schema as $k => $v) {
             self::$schema->$k = DF::namedNode($v);
         }
+        self::$context = new CallbackContextStub();
     }
 
     public function setUp(): void {
         parent::setUp();
 
-        mkdir(self::$config->cache->dir, recursive: true);
+        mkdir(self::$config->fileCache->dir, recursive: true);
         foreach ((array) (self::$config->localAccess ?? []) as $i) {
             if (!file_exists($i->dir)) {
                 mkdir($i->dir, recursive: true);
             }
         }
+        self::$context->fileCache = FileCache::fromConfig(self::$config->fileCache);
     }
 
     public function tearDown(): void {
         parent::tearDown();
 
-        system('rm -fR "' . self::$config->cache->dir . '"');
+        system('rm -fR "' . self::$config->fileCache->dir . '"');
         foreach ((array) (self::$config->localAccess ?? []) as $i) {
             system('rm -fR "' . $i->dir . '"');
         }
@@ -84,33 +89,28 @@ class ResourceTest extends \PHPUnit\Framework\TestCase {
         $res->method('getUri')->willReturn($graph->getNode());
         $res->method('getGraph')->willReturn($graph);
 
-        // unauthorized
-        $graph->add(DF::quad($resUri, self::$schema->aclRead, DF::literal('foo')));
-        $resp = Resource::cacheHandler($res, [], self::$config, null);
-        $this->assertEquals(new ResponseCacheItem('Unauthorized', 401), $resp);
-
         $graph->add(DF::quad($resUri, self::$schema->aclRead, DF::literal('public')));
-        $resp = Resource::cacheHandler($res, [], self::$config, null);
+        $resp = Resource::cacheHandler($res, [], self::$config, self::$context);
         $this->assertEquals(new ResponseCacheItem('Unsupported resource format (). Only model/gltf-binary is supported.', 400), $resp);
 
         $mime = DF::quad($resUri, self::$schema->mime, DF::literal('image/png'));
         $graph->add($mime);
-        $resp = Resource::cacheHandler($res, [], self::$config, null);
+        $resp = Resource::cacheHandler($res, [], self::$config, self::$context);
         $this->assertEquals(new ResponseCacheItem('Unsupported resource format (image/png). Only model/gltf-binary is supported.', 400), $resp);
 
         $graph->delete($mime);
         $graph->add($mime->withObject(DF::literal('model/gltf-binary')));
-        $resp = Resource::cacheHandler($res, [], self::$config, null);
+        $resp = Resource::cacheHandler($res, [], self::$config, self::$context);
         $this->assertEquals($this->getRefResponse($resUri), $resp);
 
         $graph->add(DF::quad($resUri, self::$schema->size, DF::literal(2 << 30)));
-        $resp = Resource::cacheHandler($res, [], self::$config, null);
+        $resp = Resource::cacheHandler($res, [], self::$config, self::$context);
         $this->assertEquals(new ResponseCacheItem('Resource size (2048 MB) exceeds the limit (1000 MB)', 400), $resp);
     }
 
     public function testGetResponse(): void {
         $resMeta = $this->getResourceMeta(self::RES_URL, '2025-01-01');
-        $res     = new Resource($resMeta, self::$config, null);
+        $res     = new Resource($resMeta, self::$config, self::$context);
 
         $resp = $res->getResponse();
         $this->assertEquals($this->getRefResponse(self::RES_URL), $resp);
@@ -120,7 +120,7 @@ class ResourceTest extends \PHPUnit\Framework\TestCase {
     }
 
     private function getRefResponse(string $url, bool $hit = false): ResponseCacheItem {
-        $refPath    = self::$config->cache->dir . '/' . hash('xxh128', $url) . '/thumb.glb';
+        $refPath    = self::$config->fileCache->dir . '/' . hash('xxh128', $url) . '/thumb.glb';
         $refHeaders = [
             'Content-Type' => 'model/gltf-binary',
             'Content-Size' => (string) filesize($refPath),

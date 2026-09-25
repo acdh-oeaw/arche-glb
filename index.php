@@ -39,7 +39,7 @@ $service = new Service(__DIR__ . '/config.yaml');
 
 $config = $service->getConfig();
 $log    = $service->getLog();
-$clbck  = fn($res, $param) => Resource::cacheHandler($res, $param, $config, $log);
+$clbck  = fn($res, $param, $context) => Resource::cacheHandler($res, $param, $config, $context);
 $service->setCallback($clbck);
 
 $response = $service->serveRequest($_GET['id'] ?? '', []);

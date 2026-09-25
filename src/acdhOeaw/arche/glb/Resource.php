@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
 use rdfInterface\DatasetNodeInterface;
 use termTemplates\PredicateTemplate as PT;
 use acdhOeaw\arche\lib\dissCache\ResponseCacheItem;
-use acdhOeaw\arche\lib\dissCache\FileCache;
+use acdhOeaw\arche\lib\dissCache\CallbackContextInterface;
 use acdhOeaw\arche\lib\RepoResourceInterface;
 
 /**
@@ -54,22 +54,19 @@ class Resource {
      */
     static public function cacheHandler(RepoResourceInterface $res,
                                         array $param, object $config,
-                                        ?LoggerInterface $log = null): ResponseCacheItem {
-        $res = new self($res->getGraph(), $config, $log);
+                                        CallbackContextInterface $context): ResponseCacheItem {
+        $res = new self($res->getGraph(), $config, $context);
         return $res->getResponse();
     }
 
     private string $url;
-    private DatasetNodeInterface $meta;
-    private object $config;
     private LoggerInterface | null $log;
 
-    public function __construct(DatasetNodeInterface $meta, object $config,
-                                ?LoggerInterface $log) {
-        $this->url    = (string) $meta->getNode();
-        $this->meta   = $meta;
-        $this->config = $config;
-        $this->log    = $log;
+    public function __construct(private DatasetNodeInterface $meta,
+                                private object $config,
+                                private CallbackContextInterface $context) {
+        $this->url = (string) $meta->getNode();
+        $this->log = $context->getLog();
     }
 
     public function getResponse(): ResponseCacheItem {
@@ -100,7 +97,7 @@ class Resource {
         $path = $this->getThumbnailPath();
 
         $pathTmp   = $path . rand(0, 100000) . '.glb';
-        $fileCache = new FileCache($this->config->cache->dir, $this->log, (array) $this->config->localAccess);
+        $fileCache = $this->context->getFileCache();
         $refPath   = $fileCache->getRefFilePath($this->url, self::MIME);
 
         $dir = dirname($path);
@@ -226,12 +223,6 @@ class Resource {
     private function checkMetadata(): ResponseCacheItem | null {
         $schema = $this->config->schema;
 
-        $aclRead      = $this->meta->listObjects(new PT($schema->aclRead))->getValues();
-        $allowedRoles = array_intersect($aclRead, $this->config->allowedAclRead);
-        if (count($allowedRoles) === 0) {
-            return new ResponseCacheItem('Unauthorized', 401);
-        }
-
         $mime = $this->meta->getObjectValue(new PT($schema->mime));
         if ($mime !== self::MIME) {
             return new ResponseCacheItem("Unsupported resource format ($mime). Only " . self::MIME . " is supported.", 400);
@@ -250,6 +241,6 @@ class Resource {
      * Returns expected cached file location (doesn't assure such a file exists).
      */
     private function getThumbnailPath(): string {
-        return sprintf('%s/%s/thumb.glb', $this->config->cache->dir, hash('xxh128', $this->url));
+        return sprintf('%s/%s/thumb.glb', $this->context->getFileCache()->dir, hash('xxh128', $this->url));
     }
 }
