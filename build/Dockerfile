@@ -18,4 +18,4 @@ RUN cd /var/www/html &&\
     composer update -o --no-dev &&\
     chown -R www-data:www-data /var/www/html
 EXPOSE 80
-ENTRYPOINT entrypoint.sh
+ENTRYPOINT ["entrypoint.sh"]

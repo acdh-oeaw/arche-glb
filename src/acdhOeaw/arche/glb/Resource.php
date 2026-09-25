@@ -79,7 +79,7 @@ class Resource {
         $path    = $this->getThumbnailPath();
         $hit     = false;
         $modDate = new DateTimeImmutable($this->meta->getObjectValue(new PT($this->config->schema->modDate)));
-        if (!file_exists($path) || filemtime($path) < $modDate->getTimestamp()) {
+        if (!file_exists($path) || $this->context->getNoCache() || filemtime($path) < $modDate->getTimestamp()) {
             $this->generateThumbnail();
         } else {
             $hit = true;
